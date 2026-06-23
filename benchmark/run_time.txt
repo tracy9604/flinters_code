@@ -1,0 +1,27 @@
+
+--- stats ---
+elapsed:        6.005s
+throughput:     4469848 rows/sec
+campaigns:      50
+heap in use:    3.06 MiB
+total alloc:    955.78 MiB
+sys reserved:   11.02 MiB
+Note: for true peak RSS run: /usr/bin/time -l ./aggregator ...
+        6.95 real         5.84 user         0.16 sys
+            10682368  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 835  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   2  messages sent
+                   0  messages received
+                1721  signals received
+                  75  voluntary context switches
+               10336  involuntary context switches
+         94294439727  instructions retired
+         18886243140  cycles elapsed
+             8963200  peak memory footprint

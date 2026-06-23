@@ -1,0 +1,19 @@
+# Compiled binary
+/aggregator
+/ad-aggregator
+*.out
+
+# Large input / generated benchmark data: ignore CSVs by default, but keep the
+# small fixture and the required submission output files.
+*.csv
+!testdata/sample.csv
+!results/top10_ctr.csv
+!results/top10_cpa.csv
+
+# Real ~1GB input is too large for git; ignore it explicitly (root and testdata).
+/ad_data.csv
+testdata/ad_data.csv
+
+# OS / editor
+.DS_Store
+*.swp
