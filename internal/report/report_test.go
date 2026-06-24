@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -123,5 +124,96 @@ func TestWriteEmptyMetrics(t *testing.T) {
 	// CTR and CPA undefined -> trailing empty fields.
 	if !strings.Contains(sb.String(), "CMP000,0,0,5.00,0,,") {
 		t.Errorf("undefined metrics not written as empty fields.\ngot:\n%s", sb.String())
+	}
+}
+
+// largeCampaignSet builds 12 campaigns with strictly distinct CTRs and CPAs so
+// the full top-N ordering (and the exclusion of the lowest two) can be asserted.
+//
+// CTR = clicks/100000 is monotonically decreasing by ID; CPA = spend/conv is
+// monotonically increasing by ID. So the CTR ranking and CPA ranking are the
+// reverse of each other, which catches accidental shared-sort bugs.
+func largeCampaignSet() map[string]*model.Campaign {
+	campaigns := make(map[string]*model.Campaign, 12)
+	for i := 1; i <= 12; i++ {
+		id := fmt.Sprintf("CMP%02d", i)
+		// clicks: 1300, 1200, ... 200 -> CTR 0.0130 .. 0.0020 (distinct)
+		clicks := int64(1400 - i*100)
+		// spendCents grows with i while conversions are constant -> CPA grows.
+		campaigns[id] = &model.Campaign{
+			ID:          id,
+			Impressions: 100000,
+			Clicks:      clicks,
+			SpendCents:  int64(100000 + i*1000), // $1000.00, $1010.00, ...
+			Conversions: 100,
+		}
+	}
+	return campaigns
+}
+
+func TestTopByCTRLargeSetOrderAndLimit(t *testing.T) {
+	got := ids(TopByCTR(largeCampaignSet(), 10))
+	want := []string{
+		"CMP01", "CMP02", "CMP03", "CMP04", "CMP05",
+		"CMP06", "CMP07", "CMP08", "CMP09", "CMP10",
+	}
+	if !equal(got, want) {
+		t.Errorf("TopByCTR(10) = %v, want %v (CMP11/CMP12 must be excluded)", got, want)
+	}
+}
+
+func TestTopByCPALargeSetOrder(t *testing.T) {
+	// CPA grows with i, so the 10 lowest are CMP01..CMP10 in ascending order.
+	got := ids(TopByCPA(largeCampaignSet(), 10))
+	want := []string{
+		"CMP01", "CMP02", "CMP03", "CMP04", "CMP05",
+		"CMP06", "CMP07", "CMP08", "CMP09", "CMP10",
+	}
+	if !equal(got, want) {
+		t.Errorf("TopByCPA(10) = %v, want %v", got, want)
+	}
+}
+
+// TestRankByFullPrecisionCTR mirrors the real dataset: two campaigns whose CTR
+// rounds to the same 4-decimal display value but differ in full precision. The
+// higher full-precision CTR must rank first, even though its ID sorts later
+// (so the tie-break is NOT what determines the order).
+func TestRankByFullPrecisionCTR(t *testing.T) {
+	campaigns := map[string]*model.Campaign{
+		// CTR 0.027519 -> displays 0.0275
+		"CMP_A": {ID: "CMP_A", Impressions: 1_000_000, Clicks: 27_519, SpendCents: 100, Conversions: 1},
+		// CTR 0.027521 -> displays 0.0275 (higher, later ID)
+		"CMP_Z": {ID: "CMP_Z", Impressions: 1_000_000, Clicks: 27_521, SpendCents: 100, Conversions: 1},
+	}
+	got := ids(TopByCTR(campaigns, 10))
+	want := []string{"CMP_Z", "CMP_A"}
+	if !equal(got, want) {
+		t.Errorf("ranking = %v, want %v (must order by full-precision CTR, not rounded display)", got, want)
+	}
+
+	// Both render identically at 4 decimals, confirming why they look "equal".
+	var sb strings.Builder
+	if err := Write(&sb, TopByCTR(campaigns, 10)); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	out := sb.String()
+	if strings.Count(out, "0.0275") != 2 {
+		t.Errorf("expected both rows to display CTR 0.0275.\ngot:\n%s", out)
+	}
+}
+
+// TestRankByFullPrecisionCPA is the CPA analogue: rounds-equal at 2 decimals,
+// ranked by full precision, with the lower-CPA campaign having the later ID.
+func TestRankByFullPrecisionCPA(t *testing.T) {
+	campaigns := map[string]*model.Campaign{
+		// CPA 19.2881 -> displays 19.29
+		"CMP_A": {ID: "CMP_A", Impressions: 1000, Clicks: 10, SpendCents: 192_881_000, Conversions: 100_000},
+		// CPA 19.2880 -> displays 19.29 (lower, later ID)
+		"CMP_Z": {ID: "CMP_Z", Impressions: 1000, Clicks: 10, SpendCents: 192_880_000, Conversions: 100_000},
+	}
+	got := ids(TopByCPA(campaigns, 10))
+	want := []string{"CMP_Z", "CMP_A"}
+	if !equal(got, want) {
+		t.Errorf("ranking = %v, want %v (must order by full-precision CPA, not rounded display)", got, want)
 	}
 }

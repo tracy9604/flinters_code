@@ -69,3 +69,64 @@ order. Multiple-choice answers to clarifying questions are noted as well.
 > Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
 >
 > To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+## Prompt 3 — review: file reading approach
+
+> thank you for your help. I need to review your work. Please clarify the solution you use to read the large file (using chunks, channel...)
+
+---
+
+## Prompt 4 — review: when to compute CTR/CPA
+
+> why don't you calculate CTR and CPA while accumulating campaign data?
+
+---
+
+## Prompt 5 — clarify requirement
+
+> 1. Aggregate data by campaign_id
+> In this task, I want to calcute CTR and CPA for each campaign_id
+
+---
+
+## Prompt 6 — clarify scope
+
+> you're right. The task doesn't mention that I have calculate CTR CPA for all campaign which are not in output.
+
+---
+
+## Prompt 7 — review: reading vs chunks/channel + map size
+
+> so, I'm concern about how you read the file, is that better than using chunks and channel to load file? You are scaning the file row by row, precompute and store in a map, maybe a large map
+
+---
+
+## Prompt 8 — run against real input
+
+> well, I got your idea. Now I added ad_data.csv in testdata folder. That the real input. Please rerun and update result, report, readme, benchmark... with this input file
+
+---
+
+## Prompt 9 — gitignore the input
+
+> please ignore both ad_data.csv
+
+---
+
+## Prompt 10 — update this file
+
+> help me update prompts.md
+
+---
+
+## Prompt 11 — review equal results + add tests
+
+> the result CTR and CPA of all campaign_id are equal. Please review it and confirm you calcuate right. Gen unit test with more sample data
+
+---
+
+## Prompt 12 — update this file
+
+> well done, please update prompts.md
